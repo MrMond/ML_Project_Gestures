@@ -11,6 +11,7 @@
     - [ ] select model
         - convolutional net _shape: (21 points*3 dimensions | x frames/second * x seconds | n filter?)_
         - normal lin-layer nn
+        - flatten list of coordinates and the apply 1D convolution with stride = 3?
         - table like data $\rarr$ decision trees / random forest?
 - [x] Put mediapipe models in stream mode or video mode
 - [ ] Stream Video to own model for live gesture 

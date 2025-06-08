@@ -1,5 +1,4 @@
 import os
-import pickle
 # models
 # https://ai.google.dev/edge/mediapipe/solutions/guide
 # https://ai.google.dev/edge/mediapipe/solutions/vision/gesture_recognizer/index#models
@@ -41,8 +40,6 @@ def add_skeleton(frame, frame_timestamp_ms):
                 mp.solutions.drawing_styles.get_default_hand_landmarks_style(),
                 mp.solutions.drawing_styles.get_default_hand_connections_style(),
             )
-        with open("training/1_hand.pkl","wb") as of:
-            pickle.dump(result,of) # temp
     except IndexError as e:
         pass
 
