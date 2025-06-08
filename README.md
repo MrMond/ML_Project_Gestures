@@ -7,7 +7,10 @@
 - [x] Identify relevant features (see ```training/understand_data.ipynb```)
 - [ ] Train gesture classification on Videos
     - [ ] Define gestures
+        - record multiple videos of each gesture (~25-50 * team member)
+        - apply script to get points and serialize points as pkl-files
     - [ ] Label data
+        - increase size of dataset via noise injection?
     - [ ] select model
         - convolutional net _shape: (21 points*3 dimensions | x frames/second * x seconds | n filter?)_
         - normal lin-layer nn
