@@ -1,7 +1,12 @@
 """general utility for the project"""
 
 from time import time, sleep
-
+import math
+import scipy.sparse as sp
+import numpy as np
+import torch
+from torch.nn.modules.module import Module
+from torch.nn.parameter import Parameter
 
 class FPS:
     """A class to be used with the ```with FPS() as fps:``` syntax to limit the framerate of a loop.
@@ -53,3 +58,63 @@ class FPS:
     @timestamp_ms.setter
     def timestamp_ms(self, x):
         pass
+
+
+class GraphConvolution(Module):
+    """GCN Layer;\n
+    [```source```](https://github.com/tkipf/pygcn/tree/master/pygcn)"""
+
+    def __init__(self, in_features,out_features,bias=True):
+        super(GraphConvolution,self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.weight = Parameter(torch.FloatTensor(in_features,out_features))
+        if bias:
+            self.bias = Parameter(torch.FloatTensor(out_features))
+        else:
+            self.register_parameter("bias",None)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        stdv = 1. / math.sqrt(self.weight.size(1))
+        self.weight.data.uniform_(-stdv,stdv)
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv,stdv)
+    
+    def forward(self,input,adj):
+        support = torch.mm(input,self.weight)
+        output = torch.spmm(adj,support)
+        if self.bias is not None:
+            return output + self.bias
+        else:
+            return output
+
+    def __repr__(self):
+        return self.__class__.__name__ + ' (' \
+               + str(self.in_features) + ' -> ' \
+               + str(self.out_features) + ')'
+
+class TemporalConvolution(Module):
+    def __init__(self):
+        super(TemporalConvolution,self).__init__()
+
+def convert_adjacency_matrix(adjacency:list[tuple])->torch.Tensor:    
+    rows,cols = zip(*adjacency)
+    size = max(max(rows), max(cols)) + 1
+    data = [1] * len(adjacency)
+
+    adj = sp.coo_matrix((data,(rows,cols)),shape=(size,size))
+    # make symmetrical
+    adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
+
+    # convert to tensor
+    adj = adj.tocoo().astype(np.float32)
+    idxs = torch.from_numpy(
+        np.vstack((adj.row, adj.col)).astype(np.int64)
+    )
+    vals = torch.from_numpy(adj.data)
+    shape = torch.Size(adj.shape)
+
+    adj = torch.sparse.FloatTensor(idxs,vals,shape)
+
+    return adj

@@ -6,10 +6,10 @@ from etc.utils import FPS
 # relative imports
 from add_skeleton import add_skeleton
 
-record_duration = 10  # s
 target_framerate = 24  # fps
 instructions = "Press 'Q' to exit"
 store_recording = False
+outpath = os.path.join(os.getcwd(), "training", "test_vid", f"{uuid.uuid4()}.mp4")
 
 # define camera
 
@@ -19,7 +19,7 @@ frame_h = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
 if store_recording:
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(
-        filename=os.path.join(os.getcwd(), "training", "test_vid", f"{uuid.uuid4()}.mp4"),
+        filename=outpath,
         fourcc=fourcc,
         fps=target_framerate,
         frameSize=(frame_w, frame_h),
@@ -29,10 +29,11 @@ with FPS(limit=target_framerate) as fps:
     while True:
         ret, frame = cam.read()
 
-        frame = add_skeleton(frame,fps.timestamp_ms)
-
         if store_recording:
             out.write(frame)
+
+        frame,_ = add_skeleton(frame,fps.timestamp_ms)
+
 
         cv2.putText(
             frame,

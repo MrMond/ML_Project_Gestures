@@ -44,4 +44,36 @@ def add_skeleton(frame, frame_timestamp_ms):
         pass
 
     # todo: return frame as np
-    return image
+    return image, result
+
+if __name__ == "__main__":
+
+    import pickle, cv2
+
+    data_dir =  r"training\test_vid"
+
+    for vid in os.listdir(data_dir):
+        if not vid.split(".")[-1] == "mp4":
+            continue
+        cap = cv2.VideoCapture(os.path.join(data_dir,vid))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        frame_idx = 0
+
+        frame_results = {}
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            timestamp = frame_idx / fps
+            frame_idx += 1
+
+            frame,result = add_skeleton(frame,int(timestamp*100))
+
+            if result:
+                frame_results[timestamp] = result
+
+        with open(os.path.join(data_dir,f"{vid.split(".")[0]}.pkl"),"wb") as of:
+            pickle.dump(frame_results,of)
+        cap.release()
