@@ -1,7 +1,7 @@
 import os
 import torch.nn as nn
 import torch.nn.functional as f
-from etc.utils import GraphConvolution, TemporalConvolution, convert_adjacency_matrix
+from etc.utils import GraphConvolution, convert_adjacency_matrix
 
 DATA_DIR = os.path.join(os.getcwd(),"training/data")
 GESTURE_COUNT = 3
@@ -24,9 +24,9 @@ class Model(nn.Module):
 
         # layers
         self.sgc1 = GraphConvolution()
-        self.tc1 = TemporalConvolution()
+        self.tc1 = TemporalConvolution() # make this 1d convolution
         self.sgc2 = GraphConvolution()
-        self.tc2 = TemporalConvolution()
+        self.tc2 = TemporalConvolution() # make this 1d convolution
         self.pool = nn.AdaptiveAvgPool2d()
         self.fc = nn.Linear(,nclass)
 

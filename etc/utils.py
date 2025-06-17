@@ -62,7 +62,9 @@ class FPS:
 
 class GraphConvolution(Module):
     """GCN Layer;\n
-    [```source```](https://github.com/tkipf/pygcn/tree/master/pygcn)"""
+    [```source```](https://github.com/tkipf/pygcn/tree/master/pygcn);\n
+    
+    I don't use torch.spmm (unlike the repo does), because the adj-matrix is very small (21x21) and the additional overhead might slow the operation down"""
 
     def __init__(self, in_features,out_features,bias=True):
         super(GraphConvolution,self).__init__()
