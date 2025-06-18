@@ -84,12 +84,17 @@ class GraphConvolution(Module):
             self.bias.data.uniform_(-stdv,stdv)
     
     def forward(self,input,adj):
-        support = torch.mm(input,self.weight)
-        output = torch.spmm(adj,support)
-        if self.bias is not None:
-            return output + self.bias
-        else:
-            return output
+        # expected input shape (B,T,P,D)
+        B,T,P,D = input.shape
+        output = []
+
+        for t in range(T):
+            x_t = input[:,t,:,:]
+            support = torch.matmul(x_t,self.weight)
+            x_t = torch.matmul(adj,support)
+            if self.bias is not None:
+                x_t = x_t + self.bias
+            output.append(x_t)
 
     def __repr__(self):
         return self.__class__.__name__ + ' (' \

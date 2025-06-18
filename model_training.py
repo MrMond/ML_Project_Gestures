@@ -14,22 +14,27 @@ SKELETON = [
              (17,18),(18,19),(19,20) #pinky
              ]
 
-class Model(nn.Module):
-    def __init__(self, nclass):
-        super(Model,self).__init__()
+class ST_GCN(nn.Module):
+    '''ST-GCN (Spatial-Temporal Graph Convolutional Network)\n\nI assume T=50: 5s @ 50fps'''
+    def __init__(self, n_classes):
+        super(ST_GCN,self).__init__()
 
-        # conf
+        ################## conf ##################
         self.adj = convert_adjacency_matrix(SKELETON)
         self.dropout = nn.Dropout(p=0.1)
 
-        # layers
-        self.sgc1 = GraphConvolution()
-        self.tc1 = TemporalConvolution() # make this 1d convolution
-        self.sgc2 = GraphConvolution()
-        self.tc2 = TemporalConvolution() # make this 1d convolution
-        self.pool = nn.AdaptiveAvgPool2d()
-        self.fc = nn.Linear(,nclass)
-
+        ################# layers #################
+        # input shape: (B,T=50,P=21,D=3)
+        self.sgc1 = GraphConvolution(3,8)
+        # input shape: (B,T=50,P=21,D=8)
+        self.tc1 = nn.Conv2d(in_channels=50,out_channels=128,kernel_size=1,stride=1,padding=0) # 1x1 temporal convolution
+        # input shape: (B,T=50,P=21,D=8)
+        self.sgc2 = GraphConvolution(8,16)
+        # input shape: (B,T=128,P=21,D=16)
+        self.tc2 =  nn.Conv2d(in_channels=128,out_channels=256,kernel_size=1,stride=1,padding=0) # 1x1 temporal convolution
+        # input shape: (B,T=256,P=21,D=16)
+        self.pool = nn.AdaptiveAvgPool2d((21,16)) # output size: (P, D)
+        self.fc = nn.Linear(21*16,n_classes)
 
     def forward(self,x):
 
@@ -45,5 +50,5 @@ class Model(nn.Module):
         return x
 
 
-model = Model(GESTURE_COUNT)
+model = ST_GCN(GESTURE_COUNT)
 
