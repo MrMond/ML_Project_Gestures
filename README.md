@@ -9,13 +9,42 @@
     - [ ] Define gestures
         - record multiple videos of each gesture (~25-50 * team member)
         - apply script to get points and serialize points as pkl-files
-    - [ ] Label data
-        - increase size of dataset via noise injection?
-    - [ ] select model
-        - convolutional net _shape: (21 points*3 dimensions | x frames/second * x seconds | n filter?)_
-        - normal lin-layer nn
-        - flatten list of coordinates and the apply 1D convolution with stride = 3?
-        - table like data $\rarr$ decision trees / random forest?
+    - [x] Label data
+    - [ ] increase size of dataset via noise injection?
+    - [x] select model
+    - [x] define model
 - [x] Put mediapipe models in stream mode or video mode
 - [ ] Stream Video to own model for live gesture 
 - [ ] Rig up live gestures to a teams meeting or powerpoint presentation
+
+# Gesture definition:
+
+The starting position for each gesture is a right hand fist, with the fingers pointing towards the camera
+
+## Forward
+
+This will advance the presentation towards the next slide
+
+_Gesture:_ "point the index finger"
+
+1) extend the index finger to the top
+2) move the index fnger right and move the hand slightly in that direction
+
+
+## Backward
+
+This will return the presentation to the previous slide
+
+_Gesture:_ "point the thumb"
+
+1) extend the thumb to the left and move the hand slightly in that direction
+
+## Blacken
+
+This will toggle the screen on and off. 
+
+_Gesture:_ "High five the camera"
+
+1) Open all fingers and move the hand slightly towards the camera
+2) hold still for a little while
+3) reverse movement ```1.```

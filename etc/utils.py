@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from torch.nn.modules.module import Module
 from torch.nn.parameter import Parameter
+from torch import Tensor
 
 class FPS:
     """A class to be used with the ```with FPS() as fps:``` syntax to limit the framerate of a loop.
@@ -38,10 +39,10 @@ class FPS:
         self.__frame_list.append(t)
         self.__frame_list = [ts for ts in self.__frame_list if ts + 1 > t]
         self.__measured_fps = len(self.__frame_list)
+        self.__last_frame_start_time = t
         if self.__frame_limit:
             sleep_dur = 1 / self.__frame_limit - (t - self.__last_frame_start_time)
             sleep(max(0, sleep_dur))
-        self.__last_frame_start_time = t
 
     @property
     def measured_fps(self) -> int:
@@ -58,7 +59,6 @@ class FPS:
     @timestamp_ms.setter
     def timestamp_ms(self, x):
         pass
-
 
 class GraphConvolution(Module):
     """GCN Layer;\n
@@ -84,17 +84,19 @@ class GraphConvolution(Module):
             self.bias.data.uniform_(-stdv,stdv)
     
     def forward(self,input,adj):
-        # expected input shape (B,T,P,D)
-        B,T,P,D = input.shape
+        # expected input shape (B,T,P,D) --> (B,D,T,P)
+        B,D,T,P = input.shape
         output = []
 
         for t in range(T):
-            x_t = input[:,t,:,:]
+            x_t = input[:,:,t,:]
             support = torch.matmul(x_t,self.weight)
             x_t = torch.matmul(adj,support)
             if self.bias is not None:
                 x_t = x_t + self.bias
             output.append(x_t)
+        
+        return torch.stack(output)
 
     def __repr__(self):
         return self.__class__.__name__ + ' (' \
@@ -125,3 +127,15 @@ def convert_adjacency_matrix(adjacency:list[tuple])->torch.Tensor:
     adj = torch.sparse.FloatTensor(idxs,vals,shape)
 
     return adj
+
+def pickle_to_tensor(data:dict)->Tensor:
+    output = []
+    for timestep in data.values():
+        landmarks = timestep.hand_landmarks[0] # disregard if 2 are found
+        skeleton = []
+        for point in landmarks:
+            skeleton.append([point.x,point.y,point.z])
+        output.append(skeleton)
+
+    # permute to get correct shape (T,P,D)-->(D,T,P); unsqueeze to add Batch dimension B=1 (D,T,P)-->(B,D,T,P)
+    return torch.as_tensor(output).permute(2,0,1).unsqueeze(0) 

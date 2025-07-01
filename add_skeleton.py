@@ -1,4 +1,5 @@
 import os
+import numpy as np
 # models
 # https://ai.google.dev/edge/mediapipe/solutions/guide
 # https://ai.google.dev/edge/mediapipe/solutions/vision/gesture_recognizer/index#models
@@ -16,6 +17,7 @@ RECOGNIZER = mp.tasks.vision.GestureRecognizer.create_from_options(OPTIONS)
 
 
 def add_skeleton(frame, frame_timestamp_ms):
+    frame.astype(np.uint8)
     mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
 
     result = RECOGNIZER.recognize_for_video(mp_img, frame_timestamp_ms)
