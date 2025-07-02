@@ -62,17 +62,17 @@ class FPS:
 
 class GraphConvolution(Module):
     """GCN Layer;\n
-    [```source```](https://github.com/tkipf/pygcn/tree/master/pygcn);\n
+    modiefied version of this [```source```](https://github.com/tkipf/pygcn/tree/master/pygcn);\n
     
     I don't use torch.spmm (unlike the repo does), because the adj-matrix is very small (21x21) and the additional overhead might slow the operation down"""
 
-    def __init__(self, in_features,out_features,bias=True):
+    def __init__(self, in_features,out_features,adj_matrix_length=21,bias=True):
         super(GraphConvolution,self).__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = Parameter(torch.FloatTensor(in_features,out_features))
+        self.weight = Parameter(torch.FloatTensor(out_features,in_features))
         if bias:
-            self.bias = Parameter(torch.FloatTensor(out_features))
+            self.bias = Parameter(torch.FloatTensor(out_features,adj_matrix_length))
         else:
             self.register_parameter("bias",None)
         self.reset_parameters()
@@ -84,28 +84,24 @@ class GraphConvolution(Module):
             self.bias.data.uniform_(-stdv,stdv)
     
     def forward(self,input,adj):
-        # expected input shape (B,T,P,D) --> (B,D,T,P)
+        # expected input shape (B,D,T,P)
         B,D,T,P = input.shape
         output = []
 
         for t in range(T):
             x_t = input[:,:,t,:]
-            support = torch.matmul(x_t,self.weight)
-            x_t = torch.matmul(adj,support)
+            x_t = torch.matmul(x_t,adj)
+            x_t = torch.matmul(self.weight,x_t)
             if self.bias is not None:
                 x_t = x_t + self.bias
             output.append(x_t)
         
-        return torch.stack(output)
+        return torch.stack(output).permute(1,2,0,3)
 
     def __repr__(self):
         return self.__class__.__name__ + ' (' \
                + str(self.in_features) + ' -> ' \
                + str(self.out_features) + ')'
-
-class TemporalConvolution(Module):
-    def __init__(self):
-        super(TemporalConvolution,self).__init__()
 
 def convert_adjacency_matrix(adjacency:list[tuple])->torch.Tensor:    
     rows,cols = zip(*adjacency)
@@ -138,4 +134,4 @@ def pickle_to_tensor(data:dict)->Tensor:
         output.append(skeleton)
 
     # permute to get correct shape (T,P,D)-->(D,T,P); unsqueeze to add Batch dimension B=1 (D,T,P)-->(B,D,T,P)
-    return torch.as_tensor(output).permute(2,0,1).unsqueeze(0) 
+    return torch.as_tensor(output).permute(2,0,1)#.unsqueeze(0) 
