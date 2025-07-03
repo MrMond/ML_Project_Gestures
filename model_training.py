@@ -106,68 +106,69 @@ class PKL_Dataset(Dataset):
         label = self.labels[idx]
         return dt, label
 
+if __name__ == "__main__":
 
-model = ST_GCN(GESTURE_COUNT)
-dataset = PKL_Dataset(DATA_DIR)
-trainset, valset = random_split(dataset, [0.8, 0.2])
-training_data = DataLoader(trainset, shuffle=True)
-validation_data = DataLoader(valset, shuffle=False)
+    model = ST_GCN(GESTURE_COUNT)
+    dataset = PKL_Dataset(DATA_DIR)
+    trainset, valset = random_split(dataset, [0.8, 0.2])
+    training_data = DataLoader(trainset, shuffle=True)
+    validation_data = DataLoader(valset, shuffle=False)
 
-# Train Model
+    # Train Model
 
-epochs = 7
-loss_fn = nn.CrossEntropyLoss()
-optimizer = Adam(model.parameters())
+    epochs = 7
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = Adam(model.parameters())
 
-loop = tqdm(range(epochs), desc="loss = ___, val = ___")
-losses = []
-best_loss = float("inf")
+    loop = tqdm(range(epochs), desc="loss = ___, val = ___")
+    losses = []
+    best_loss = float("inf")
 
 
-model.train(True)
-with tempfile.TemporaryDirectory() as tmpdir:
-    tmp_path = os.path.join(tmpdir, "best_model.pth")
-    for _ in loop:
-        avg_loss = 0
-        for data in training_data:  # train 1 epoch
-            inputs, labels = data
-            optimizer.zero_grad()  # zero gradients for each batch
-            outputs = model(inputs)
-
-            loss = loss_fn(outputs, labels)
-            loss.backward()
-
-            optimizer.step()
-
-            avg_loss += loss.item()
-
-        avg_loss = avg_loss / len(training_data)
-        losses.append(avg_loss)
-
-        model.eval()
-
-        avg_vloss = 0
-        with torch.no_grad():  # validate
-            for data in validation_data:
+    model.train(True)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = os.path.join(tmpdir, "best_model.pth")
+        for _ in loop:
+            avg_loss = 0
+            for data in training_data:  # train 1 epoch
                 inputs, labels = data
+                optimizer.zero_grad()  # zero gradients for each batch
                 outputs = model(inputs)
-                vloss = loss_fn(outputs, labels)
-                avg_vloss += vloss.item()
-            avg_vloss = avg_vloss / len(validation_data)
-        loop.set_description(f"loss = {avg_loss:.5f} / val = {avg_vloss:.5f}")
 
-        if best_loss > avg_vloss:
-            best_loss = avg_vloss
-            torch.save(model.state_dict(), tmp_path)
-        else:
-            model = ST_GCN(GESTURE_COUNT)
-            model.load_state_dict(torch.load(tmp_path))
+                loss = loss_fn(outputs, labels)
+                loss.backward()
 
-model.train(False)
+                optimizer.step()
 
-torch.save(model.state_dict(), os.path.join(MODEL_OUT_DIR, "classifier.pth"))
+                avg_loss += loss.item()
 
-with open(
-    os.path.join(os.getcwd(), "training", f"run_losses_{time.time()}.pkl"), "wb"
-) as of:
-    pickle.dump(losses, of)
+            avg_loss = avg_loss / len(training_data)
+            losses.append(avg_loss)
+
+            model.eval()
+
+            avg_vloss = 0
+            with torch.no_grad():  # validate
+                for data in validation_data:
+                    inputs, labels = data
+                    outputs = model(inputs)
+                    vloss = loss_fn(outputs, labels)
+                    avg_vloss += vloss.item()
+                avg_vloss = avg_vloss / len(validation_data)
+            loop.set_description(f"loss = {avg_loss:.5f} / val = {avg_vloss:.5f}")
+
+            if best_loss > avg_vloss:
+                best_loss = avg_vloss
+                torch.save(model.state_dict(), tmp_path)
+            else:
+                model = ST_GCN(GESTURE_COUNT)
+                model.load_state_dict(torch.load(tmp_path))
+
+    model.train(False)
+
+    torch.save(model.state_dict(), os.path.join(MODEL_OUT_DIR, "classifier.pth"))
+
+    with open(
+        os.path.join(os.getcwd(), "training", f"run_losses_{time.time()}.pkl"), "wb"
+    ) as of:
+        pickle.dump(losses, of)

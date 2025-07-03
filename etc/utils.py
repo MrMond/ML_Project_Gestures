@@ -135,3 +135,21 @@ def pickle_to_tensor(data:dict)->Tensor:
 
     # permute to get correct shape (T,P,D)-->(D,T,P); unsqueeze to add Batch dimension B=1 (D,T,P)-->(B,D,T,P)
     return torch.as_tensor(output).permute(2,0,1)#.unsqueeze(0) 
+
+class RotateTimeseries:
+    def __init__(self):
+        self._frames = []
+
+    def continuous(self):
+        '''check that the data has correct shape for tensor conversion'''
+        return not(None in self._frames) and len(self._frames) == 30
+    
+    @property 
+    def frames(self):
+        return {i:f for i,f in enumerate(self._frames)}
+    
+    @frames.setter
+    def frames(self,val):
+        self._frames.append(val)
+        if len(self._frames) > 30:
+            self._frames = self._frames[-30:]

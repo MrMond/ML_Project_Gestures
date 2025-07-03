@@ -5,7 +5,7 @@
 - [x] Capture Video 
 - [x] Use Google Model to find hand-rig
 - [x] Identify relevant features (see ```training/understand_data.ipynb```)
-- [ ] Train gesture classification on Videos
+- [x] Train gesture classification on Videos
     - [x] Define gestures
         - record multiple videos of each gesture (~25-50 * team member)
         - apply script to get points and serialize points as pkl-files
