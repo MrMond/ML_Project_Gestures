@@ -27,7 +27,7 @@ classification_model.eval() # turn off dropout layers
 
 vision_options = vision.GestureRecognizerOptions(
     base_options = mp.tasks.BaseOptions(model_asset_path=VISION_MODEL_PATH),
-    runnung_mode=mp.tasks.vision.RunningMode.VIDEO,
+    running_mode=mp.tasks.vision.RunningMode.VIDEO,
     num_hands=1, # max number of hands detected
 )
 vision_model = mp.tasks.vision.GestureRecognizer.create_from_options(vision_options)
@@ -96,11 +96,11 @@ with FPS(limit=FPS_LIMIT) as fps:
         frame,skeleton = recognize_hand(frame,fps.timestamp_ms)
         skeleton_positions.frames = skeleton
 
-        cv2.imshow("Press 'Q' to exit",frame)
+        # cv2.imshow("Press 'Q' to exit",frame) # toggle this for debug; if active, blacken doesn't work (imshow-window takes fokus & "B" input isn't ecognized by powerpoint)
 
         # check that the data has correct shape for tensor conversion & only do the calculations, if there is no cooldown left
-        if skeleton_positions.continuous() and cooldown <= 0: # TODO continuous doesn't work yet
-            tensor = convert_to_tensor(skeleton_positions.frames)
+        if skeleton_positions.continuous() and cooldown <= 0:
+            tensor = convert_to_tensor(skeleton_positions.frames).unsqueeze(0) # add batch dimension
             classification = classify_series(tensor)
             match classification:
                 case "gesture_backward":
@@ -110,7 +110,7 @@ with FPS(limit=FPS_LIMIT) as fps:
                 case "gesture_blacken":
                     presentation.toggle_blacken()
                 case _:
-                    pass
+                    cooldown -= FPS_LIMIT*3 # apply no cooldown, when no input was taken
             cooldown += FPS_LIMIT*3
 
         # end loop by pressing q

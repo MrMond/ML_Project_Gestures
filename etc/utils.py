@@ -150,6 +150,10 @@ class RotateTimeseries:
     
     @frames.setter
     def frames(self,val):
+        try: # assure that only "correct" skeleton results are in the array
+            _ = val.hand_landmarks[0]
+        except IndexError:
+            val = None
         self._frames.append(val)
         if len(self._frames) > 30:
             self._frames = self._frames[-30:]
