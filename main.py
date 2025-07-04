@@ -1,5 +1,4 @@
-from etc.utils import FPS,RotateTimeseries,pickle_to_tensor as convert_to_tensor
-from control_powerpoint import PowerPoint
+from etc.utils import FPS,RotateTimeseries,PowerPoint,pickle_to_tensor as convert_to_tensor
 from model_training import ST_GCN, REVERSE_LOOKUP
 import mediapipe as mp
 from mediapipe.tasks.python import vision

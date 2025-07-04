@@ -8,6 +8,8 @@ import torch
 from torch.nn.modules.module import Module
 from torch.nn.parameter import Parameter
 from torch import Tensor
+import comtypes.client as pptx_client
+import pyautogui
 
 class FPS:
     """A class to be used with the ```with FPS() as fps:``` syntax to limit the framerate of a loop.
@@ -157,3 +159,41 @@ class RotateTimeseries:
         self._frames.append(val)
         if len(self._frames) > 30:
             self._frames = self._frames[-30:]
+
+class PowerPoint:
+    def __init__(self,path:str):
+        self.client = None
+        self.presentation = None
+        self.load_powerpoint(path)
+
+    def load_powerpoint(self,path:str):
+        self.client = pptx_client.CreateObject("PowerPoint.Application")
+        self.client.Visible = True
+
+        pres = self.client.Presentations.open(path)
+        self.presentation = pres.SlideShowSettings.Run()
+    
+    def advance_slide(self):
+        if self.client:
+            self.presentation.View.Next()
+
+    def return_slide(self):
+        if self.client:
+            self.presentation.View.Previous()
+
+    def toggle_blacken(self):
+        if self.client:
+            pyautogui.press('b') # toggle black screen
+
+    # allow "with" syntax:
+
+    def __enter__(self,path:str):
+        self.load_powerpoint(path)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            self.presentation.View.Exit()
+        except:
+            pass
+        self.client = None
+        self.presentation = None
