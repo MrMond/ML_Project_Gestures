@@ -15,7 +15,7 @@ from etc.utils import GraphConvolution, convert_adjacency_matrix, pickle_to_tens
 DATA_DIR = os.path.join(os.getcwd(), "training/skeleton_time_series")
 MODEL_OUT_DIR = os.path.join(os.getcwd(), "models/classification")
 GESTURE_COUNT = 3
-SKELETON = [
+SKELETON = [ # adjacency matrix of a hand
     (0, 1),(0, 5),(0, 9),(0, 13),(0, 17),(5, 9),(9, 13),(13, 17),  # palm
     (1, 2),(2, 3),(3, 4),  # thumb
     (5, 6),(6, 7),(7, 8),  # index finger
@@ -66,7 +66,6 @@ class ST_GCN(nn.Module):
         x = x.view(x.size(0),-1)
         x = self.fc1(x)
         x = self.fc2(x)
-
         return x
 
 class PKL_Dataset(Dataset):
@@ -84,7 +83,7 @@ class PKL_Dataset(Dataset):
         self.transform = transforms.Compose(
             [
                 transfomsv2.GaussianNoise(
-                    mean=0, sigma=0.025, clip=True
+                    mean=0, sigma=0.010, clip=True
                 )  # clip to keep values in range [0..1]
             ]
         )
@@ -120,10 +119,11 @@ if __name__ == "__main__":
     loss_fn = nn.CrossEntropyLoss()
     optimizer = Adam(model.parameters())
 
+    # only used for visualization during training
     loop = tqdm(range(epochs), desc="loss = ___, val = ___")
+    # keep track of loss for plots later on
     losses = []
     best_loss = float("inf")
-
 
     model.train(True)
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -160,10 +160,12 @@ if __name__ == "__main__":
             if best_loss > avg_vloss:
                 best_loss = avg_vloss
                 torch.save(model.state_dict(), tmp_path)
-            else:
-                model = ST_GCN(GESTURE_COUNT)
-                model.load_state_dict(torch.load(tmp_path))
 
+        # Load the best model out of all epochs
+        model = ST_GCN(GESTURE_COUNT)
+        model.load_state_dict(torch.load(tmp_path))
+
+    # serialize model
     model.train(False)
 
     torch.save(model.state_dict(), os.path.join(MODEL_OUT_DIR, "classifier.pth"))

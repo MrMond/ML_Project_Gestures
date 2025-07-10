@@ -1,50 +1,76 @@
 # ML-Project: Gestures
 
-# TODOS
+Der Use-Case für dieses Projekt ist eine digitale Steuerung einer Powerpointpräsentation mithilfe von Gesten. Dazu nimmt die Kamera die Handbewegungen auf und ein zweistufiges Modell findet die Gesten.
 
-- [x] Capture Video 
-- [x] Use Google Model to find hand-rig
-- [x] Identify relevant features (see ```training/understand_data.ipynb```)
-- [x] Train gesture classification on Videos
-    - [x] Define gestures
-        - record multiple videos of each gesture (~25-50 * team member)
-        - apply script to get points and serialize points as pkl-files
-    - [x] Label data
-    - [x] increase size of dataset via noise injection?
-    - [x] select model
-    - [x] define model
-- [x] Put mediapipe models in stream mode or video mode
-- [ ] Stream Video to own model for live gesture 
-- [ ] Rig up live gestures to a teams meeting or powerpoint presentation
+Das Script wurde in _Python 3.12_ implementiert.
 
-# Gesture definition:
+## Teammitglieder
 
-The starting position for each gesture is a right hand fist, with the fingers pointing towards the camera
+|Name|Matrikelnummer|
+|-|-|
+|Joel Bück|4860895|
+|Lukas Runge|7590014|
+|Martin Schauer|7961802|
+|Lukas Stamm|8402366|
 
-## Forward
+# Projektaufbau
 
-This will advance the presentation towards the next slide
+```
+ML_Projekt
+├── etc
+│    └── utils.py
+├── models
+│    ├── classification
+│    │    └── ...
+│    └── mediapipe
+│         └── ...
+├── training
+│    └── skeleton_time_series
+│         └── ...
+├── Ausarbeitung_Projektbericht.pdf
+├── main.py
+├── model_training.py
+└── ...
+```
 
-_Gesture:_ "point the index finger"
+Sowohl das Trainingsscript ```model_training.py``` als auch das Anwendungsscript ```main.py``` benötigen einige Funktionen, die aus Lesbarkeitsgründen nach ```utils.py``` ausgelagert wurden.
 
-1) extend the index finger to the top
-2) move the index fnger right and move the hand slightly in that direction
+## ML-Bibliotheken
 
+Es werden 2 Modelle benötigt: Eines zur Handdetektion und eines zur Zeitserienklassifikation.
 
-## Backward
+Die Handdetektion wird mit einem vortrainierten Modell von Google durchgeführt. Dazu wird die ```mediapipe``` Bibliothek genutzt.
 
-This will return the presentation to the previous slide
+Das Klassifikationsmodell wurde selbst trainiert und nutzt die ```pytorch``` Bibliothek.
 
-_Gesture:_ "point the thumb"
+## Traningsscript
 
-1) extend the thumb to the left and move the hand slightly in that direction
+```model_training.py``` 
 
-## Blacken
+Im Traningsscript werden zunächst die Modellarchitekur für das Klassifikationsmodell und der Dataloader implementiert. Danach ist ein Standard Trainings- und Validierungs-Loop implementiert.
 
-This will toggle the screen on and off. 
+### Performance
 
-_Gesture:_ "High five the camera"
+Mediapipe ermöglicht eine relativ stabile Framerate von ca. 10 fps.
 
-1) Open all fingers and move the hand slightly towards the camera
-2) hold still for a little while
-3) reverse movement ```1.```
+Das Zeitreihenklassifikationsmodell ist sehr lightweigt und hat fast keine implikation für die Framerate. Hier sind die anderen Performance-Kennzahlen:
+
+|Stat||
+|-|-|
+|Cross-Entropy-Loss|0.32|
+|Accuracy|85%|
+|Recall|85%|
+|Precision|87%|
+
+## Anwendung
+
+```main.py```
+
+Hier werden zunächst eine Powerpoint-integration, die Modelle und die Integration der Kamera geladen.
+
+Danach wird in einer Endlos-Schleife das aktuelle Frame der Kamera gelesen und:
+
+- Ein Puffer gefüllt, um die korrekte Tensor-shape sicherzustellen
+- Die Zeitreihe klassifiziert
+    - Falls ein positives Ergebnis gefunden wird, wird ein dementsprechender Befehl in Powerpoint ausgeführt und sämtlliche Gestenerkennung für eine festgelegte Zeit blockiert (Cooldown)
+    - Falls kein positives Ergebnis gefunden wird, passiert nichts

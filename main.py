@@ -66,6 +66,7 @@ def recognize_hand(frame,timestamp):
     image = cv2.cvtColor(image,cv2.COLOR_RGB2BGR) 
     return image,result
 
+# time-series calssification
 def classify_series(tensor,min_confidence=0.65)->str:
     '''returns the class of the tensor or "No class" if no class probability is above the ```min_confidence```'''
     probabilities = F.softmax(classification_model(tensor),dim=1)
@@ -85,7 +86,7 @@ FPS_LIMIT=10
 skeleton_positions = RotateTimeseries() # assures correct shape for tensor conversion
 cooldown = 0
 
-with FPS(limit=FPS_LIMIT) as fps:
+with FPS(limit=FPS_LIMIT) as fps: # limit the FPS
     while True:
         if cooldown > 0:
             cooldown -=1
@@ -95,13 +96,13 @@ with FPS(limit=FPS_LIMIT) as fps:
         frame,skeleton = recognize_hand(frame,fps.timestamp_ms)
         skeleton_positions.frames = skeleton
 
-        # cv2.imshow("Press 'Q' to exit",frame) # toggle this for debug; if active, blacken doesn't work (imshow-window takes fokus & "B" input isn't ecognized by powerpoint)
+        # cv2.imshow("Press 'Q' to exit",frame) # toggle this for debuging; if active, blacken doesn't work (imshow-window takes fokus & "B" input isn't ecognized by powerpoint)
 
         # check that the data has correct shape for tensor conversion & only do the calculations, if there is no cooldown left
         if skeleton_positions.continuous() and cooldown <= 0:
             tensor = convert_to_tensor(skeleton_positions.frames).unsqueeze(0) # add batch dimension
             classification = classify_series(tensor)
-            match classification:
+            match classification: # perform correct command in powerpoint
                 case "gesture_backward":
                     presentation.return_slide()
                 case "gesture_forward":
